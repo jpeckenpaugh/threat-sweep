@@ -1,0 +1,16 @@
+.threat-icon.software_bug { color: #ffcf5d; }
+.threat-icon.rogue_ai_bot { color: #53ffbd; }
+.unknown-threat { color: #ff6d81; font-weight: 700; }
+
+.sector.contaminated {
+  border-color: #c566ff;
+  background: #432552;
+  box-shadow: inset 0 0 14px #d46cff, 0 0 11px #9a3dff;
+  animation: contamination-pulse 1.1s ease-out;
+}
+
+@keyframes contamination-pulse {
+  0% { filter: brightness(1.8); transform: scale(1.04); }
+  55% { filter: brightness(1.35); }
+  100% { filter: none; transform: none; }
+}

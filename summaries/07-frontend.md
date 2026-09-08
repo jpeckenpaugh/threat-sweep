@@ -22,6 +22,10 @@ The SPA calls the documented FastAPI contract without duplicating board logic. T
 
 `summaries/00-template.md` was not present, so this handoff follows the established Stage 06 summary format. Verification should exercise the running frontend through the Vite proxy and check narrow portrait layouts, server-event audio behavior, and action-result transitions. `npm install` reports two dependency audit findings; no automatic upgrade was applied because that would be outside the approved frontend implementation scope.
 
+## Corrective Rerun
+
+Updated the threat-icon mapping to use the API's canonical lower-snake-case identifiers, including `software_bug` and `rogue_ai_bot`; unknown values now render an explicit contract-error placeholder instead of the virus visual. Added an 1.1-second, target-driven contamination treatment for applied `virus_signature` effects. Targets are consumed only from the backend effect payload and cleared after the animation, so no board state or threat identity is inferred client-side. `npm run build` completed successfully.
+
 ## Status
 
 - [x] Complete
