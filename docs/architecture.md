@@ -348,3 +348,180 @@ outcomes.
   `virus_signature.targets` sector with a transient contamination highlight.
 - Any contract change must be recorded here and coordinated across both stages;
   in particular, do not move game-rule calculation into the SPA.
+
+## Enhancement: Sprint 01 browser edition
+
+### Runtime boundary and repository layout
+
+`browser-edition/` is a second, static browser runtime and the primary local
+play path for this sprint. It is deliberately independent of both the
+FastAPI process and the React/Vite application in `frontend/`. A modern
+browser loads its ES modules from a static server, starts a dedicated Worker,
+and uses IndexedDB in that browser origin for local persistence. Direct
+`file://` loading is unsupported because module Workers and IndexedDB must be
+used from the documented served-page context.
+
+The edition needs no package manager, build step, network service, or external
+asset host. Its source is served as-is:
+
+```
+browser-edition/
+  index.html                   static mobile-game entry point
+  app.js                       UI bootstrap and screen coordinator
+  game-client.js               Promise-based Worker RPC client
+  game-worker.js               local authority entry point and RPC dispatcher
+  engine.js                    pure board generation, actions, effects, scoring
+  storage.js                   IndexedDB open, read, and transactional writes
+  missions.js                  immutable five-mission catalog and canonical IDs
+  audio.js                     browser-owned lightweight feedback playback
+  styles.css                   portrait-first command-center presentation
+```
+
+The listed modules may be split into presentation-oriented submodules during
+implementation, but no browser-edition module may import `backend/` or
+`frontend/`, call `/api`, or depend on a development server. Original threat
+graphics may be represented by local inline SVG or static assets within this
+directory; they must preserve the five canonical mappings.
+
+### Browser-local data model
+
+The browser Worker is the sole writer for an IndexedDB database named
+`threat-sweep-browser-edition`, version `1`. All records belong to the one
+implicit local profile; no account or profile ID is exposed to the UI.
+
+| Store | Key | Stored value and purpose |
+| --- | --- | --- |
+| `profile` | `"local"` | `{soundEnabled, createdAt, updatedAt}` singleton settings record |
+| `missionProgress` | mission ID | `{missionId, completedAt, bestScore, bestRating}` retained successful performance |
+| `attempts` | attempt ID | complete private attempt snapshot: mission ID, status, board seed/state, counters, timestamps |
+| `activeMission` | `"current"` | `{missionId, attemptId}` pointer to the one resumable active attempt |
+| `attemptEvents` | `[attemptId, sequence]` | ordered local audit/event payloads for an attempt |
+
+Immutable mission configuration remains code-owned in `missions.js`, copied
+faithfully from the server seed catalog (mission ID/order, slug, title,
+briefing, dimensions, threat configuration, and target score). It is not
+duplicated as mutable profile data. Attempt `boardState` uses the v0.1
+internal board shape: version, dimensions, cells including concealed `threat`,
+player cell state, `revealedThreat`, signal data, `noisyNextScan`, and penalty
+fields. This private record is never returned across the Worker boundary.
+
+The Worker performs each start/restart/action/abandon update as one IndexedDB
+transaction over the affected attempt, active pointer, progress, and event
+stores. It commits the game result before resolving the corresponding RPC,
+so a completed response always reflects a durable snapshot. Browser storage
+is local to an origin and may be removed by clearing site data; it is neither
+backup nor cross-device synchronization.
+
+### Worker RPC contract
+
+`game-client.js` assigns a unique request ID and sends `{id, command,
+payload}` via `postMessage`. `game-worker.js` responds once with either
+`{id, ok: true, data}` or `{id, ok: false, error: {code, message}}`. The
+client rejects unknown, malformed, or Worker-reported failures and serializes
+mutating calls in the UI while one action is pending. This is an in-process
+boundary for correct local organization, not an anti-cheat protection.
+
+| Command | Payload | Success data |
+| --- | --- | --- |
+| `bootstrap` | none | `{player, missions, activeAttempt}`; cards retain the v0.1 mission-card fields and availability derived from local progress |
+| `setSoundEnabled` | `{soundEnabled: boolean}` | `{soundEnabled, updatedAt}` |
+| `startAttempt` | `{missionId: number, restart?: boolean}` | fresh or resumed public attempt snapshot |
+| `getAttempt` | `{attemptId: string}` | current public attempt snapshot |
+| `act` | `{attemptId, type: "scan"\|"clear"\|"mark", row, column}` | action resolution response below |
+| `abandonAttempt` | `{attemptId}` | final abandoned public attempt snapshot |
+
+Invalid command payloads use `invalid_request`; unknown IDs use `not_found`;
+locked missions use `mission_locked`; and state-incompatible actions use
+`invalid_action` or `attempt_inactive`. These are stable browser-edition error
+codes, not HTTP status responses. Restarting an active attempt for the same
+mission marks the old attempt abandoned and replaces the active pointer in the
+same transaction. A non-restart start returns that mission's current active
+attempt. Starting a different mission while one is active abandons the old
+attempt and creates the selected mission's attempt, preserving the product's
+single-resumable-mission boundary.
+
+The `act` result has the existing action-response semantics:
+
+```json
+{
+  "attempt": {"id":"...","status":"active","score":120,"board":{"rows":6,"columns":6,"cells":[[]]}},
+  "action": {"type":"scan","row":2,"column":4},
+  "effects": [],
+  "events": ["scan"],
+  "result": null
+}
+```
+
+`attempt` is always a replacement public snapshot. An active board serializes
+only each sector's `state`, safe signal when legitimately learned, and a
+`revealedThreat` only after a threat scan; it never includes a concealed
+threat, board seed, or engine flags. A terminal board includes all threat
+categories. `effects`, `events`, and terminal `result` preserve the v0.1
+contract, including `virus_signature.targets` transient contamination data and
+the established five canonical threat effects. Completion updates progress and
+the next ordered mission unlock in the same transaction; failure updates no
+progress record.
+
+### Local engine responsibilities
+
+`engine.js` is a faithful JavaScript port of the v0.1 game engine, not a UI
+implementation of its rules. It owns seeded valid-board generation, neighbor
+signals, legal-action validation, safe-region expansion, threat scan effects,
+score/rating calculation, terminal decisions, and redacted serialization.
+It must use exactly these stable threat IDs: `virus`, `hacker`,
+`software_bug`, `rogue_ai_bot`, and `malware`.
+
+The Worker, rather than `app.js`, owns all random selection and any hidden
+state mutations from hacker redaction, the noisy next scan, rogue-AI
+relocation, and malware spread. It records both applied and skipped effects.
+The UI may animate a returned effect but must never infer an effect target,
+modify a board, calculate score/unlocks, or retain the private board object.
+
+### Browser edition state flow
+
+On load, `app.js` calls `bootstrap`, applies `player.soundEnabled`, and renders
+the home/mission collection. When an `activeAttempt` exists, the home UI may
+offer its mission as the existing resume path; selecting it calls
+`getAttempt`/`startAttempt` and renders its returned public snapshot. Selecting
+an unlocked mission calls `startAttempt`; a locked card has no action.
+
+During play, `app.js` owns only screen state (`home`, `mission`, `results`),
+selected action mode, pending/error presentation, and transient effect
+animation state. A sector tap sends one `act` intent. It disables conflicting
+controls until the response arrives, atomically replaces its public attempt,
+plays browser-owned audio according to the persisted sound setting, and clears
+transient highlights after their animation. A terminal response transitions to
+the results screen. Returning home calls `bootstrap` so persisted best scores
+and unlocks are displayed.
+
+`audio.js` remains presentation-only: it maps Worker cue names (`scan`,
+`mark`, `clear`, `warning`, `success`, `failure`) to lightweight browser audio
+and silently tolerates browser playback restrictions. It does not persist
+preference directly; `setSoundEnabled` remains the Worker persistence path.
+
+### Existing runtime and out-of-scope contracts
+
+The FastAPI endpoints, SQLite schema, Python services, `run.sh`, and the
+React/Vite application retain their v0.1 contracts and are not called or
+modified to run the browser edition. They remain a separate fallback/reference
+runtime. The existing HTTP API's server authority is unchanged; the Worker
+authority applies only to static browser-edition play.
+
+This enhancement does not add progress export/import, reset controls, cloud
+sync, accounts, multiplayer, remote deployment, remote hosting configuration,
+or anti-cheat claims. It does not add mission types, threats, tactical actions,
+or a new score system. The supported browser-edition launch is the documented
+local static-server command in `environment-notes.md` (and later README
+documentation), not a `file://` URL.
+
+### Browser-edition implementation checks
+
+- Stage 06 must implement the Worker engine/storage boundary and unit-test
+  redaction, legal actions, every threat effect/skipped case, terminal result,
+  progression, and restored active attempts without any HTTP request.
+- Stage 07 must implement the static UI/client boundary, five direct threat
+  visual mappings, portrait mobile presentation, audio toggle, resume flow,
+  and transient virus highlights while rendering only returned public state.
+- Stage 08 must verify the static serving path, Worker command/error contract,
+  IndexedDB persistence across reload, and that the unchanged fallback runtime
+  remains structurally intact.
