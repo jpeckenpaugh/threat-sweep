@@ -4,16 +4,16 @@
 - **Author / Executor:** Stage 08 Verification Engineer
 - **Instruction file:** `instructions/enhancements/08-verification.md`
 - **Scope reference:** `enhancements/scope.md`
-- **Commit:** `stage 08: verify browser edition enhancement`
+- **Commit:** `stage 08: reverify browser edition glyph correction`
 
 ## Work Completed
 
-Extended the existing v0.1 verification report with an evidence-backed Sprint
-01 browser-edition checklist. The checklist was derived from the approved
-sprint scope, browser-edition briefs, and the Sprint 01 architecture section.
-It covers static local access, local authority/redaction, Worker RPC,
-IndexedDB continuity, threat identity, offline boundaries, and fallback
-nonregression.
+Extended the existing v0.1 and Sprint 01 verification report with an
+evidence-backed targeted re-verification after the Stage 07 glyph correction.
+The initial Sprint 01 checklist was derived from the approved sprint scope,
+browser-edition briefs, and Sprint 01 architecture. This corrective check
+re-examined its failed threat-identity requirement and repeated relevant
+engine and fallback nonregression checks.
 
 ## Outputs Produced / Modified
 
@@ -24,17 +24,17 @@ nonregression.
 
 ## Key Decisions
 
-Browser-only behavior was reported as unverified when the documented static
-server could not bind a port in this sandbox. Static source evidence and pure
-engine test evidence are explicitly labelled as such; neither is presented as
-a browser Worker or IndexedDB execution result.
+The corrective change is appropriately narrow: a direct glyph mapping in
+`browser-edition/app.js`. Static source evidence confirms all five canonical
+threat IDs now map to different glyphs. Pure engine tests and fallback build
+checks were repeated; their evidence is explicitly not presented as browser
+Worker or IndexedDB execution.
 
 ## Open Questions & Concerns
 
-- The browser edition currently fails the distinct-threat-graphics requirement:
-  `virus` and `rogue_ai_bot` both use the `◉` glyph, differentiated only by
-  color.
-- Local-port restrictions prevented testing the served page, Worker handshake,
+- The distinct-threat-graphics requirement now passes: Virus uses `✺` and
+  Rogue AI Bot uses `◉`, with the other three canonical glyphs also distinct.
+- Local-port restrictions still prevented testing the served page, Worker handshake,
   IndexedDB persistence across reload, browser layout, audio, and live play.
 - The fallback React build and backend syntax checks pass, but fallback pytest
   is unavailable in the current virtual environment.

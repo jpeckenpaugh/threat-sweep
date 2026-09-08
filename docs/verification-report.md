@@ -152,3 +152,35 @@ PermissionError: [Errno 1] Operation not permitted
 3. The fallback application's legacy live HTTP limitation remains recorded in
    the v0.1 section above. Its frontend build and backend syntax still pass,
    but its normal pytest runner is unavailable in the current environment.
+
+---
+
+## Enhancement pass — Sprint 01 corrective re-verification
+
+- **Date:** 2026-09-08
+- **Scope:** Targeted re-verification of E06 after the Stage 07 browser-edition glyph correction, plus relevant engine and fallback-build nonregression checks.
+- **Overall result:** **PASS for E06 — all five canonical browser-edition threat IDs now have distinct glyphs.** The E05 and E07 browser-runtime limitations recorded above remain unverified and unchanged.
+
+### Method and evidence
+
+Static review of `browser-edition/app.js` confirms the direct canonical-ID
+mapping is now `virus: ✺`, `hacker: ⌨`, `software_bug: ♧`, `rogue_ai_bot: ◉`,
+and `malware: ◇`. These are five distinct glyphs, and `threatIcon()` remains
+the single renderer used by both mission-card threat rows and revealed grid
+sectors. The targeted change is confined to that mapping.
+
+Relevant nonregression checks were repeated: `node --test
+browser-edition/tests/engine.test.mjs` passed all six tests, `cd frontend &&
+npm run build` passed, and `.venv/bin/python -m compileall -q backend` passed.
+These checks do not substitute for the browser Worker or IndexedDB execution
+that remains blocked by the local-port restriction.
+
+| ID | Requirement source | Observable check and evidence | Result |
+| --- | --- | --- | --- |
+| E06-R | Scope d; Brief 01; architecture canonical visual mappings | `browser-edition/app.js` maps the five canonical IDs to `✺`, `⌨`, `♧`, `◉`, and `◇`, respectively. The values are pairwise distinct; `threatIcon()` supplies this one mapping to mission cards, revealed sectors, and the unlock banner. | PASS (static) |
+| NR01 | Brief 02; architecture local engine | `node --test browser-edition/tests/engine.test.mjs`: 6 passed, 0 failed. | PASS (engine) |
+| NR02 | Scope f; architecture fallback boundary | `cd frontend && npm run build`: 44 modules transformed and build completed. `.venv/bin/python -m compileall -q backend` completed successfully. | PASS (build/syntax) |
+
+The prior E06 failure is resolved. E05 and E07 remain unverified because this
+sandbox continues to prohibit a local static server from binding a port; no
+browser-runtime claim is made here.
