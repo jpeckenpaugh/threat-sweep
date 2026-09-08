@@ -1,1 +1,30 @@
 .DS_Store
+
+# Python environment and tooling
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+
+# Local runtime state
+*.sqlite3
+*.db
+*.db-journal
+.env
+.env.*
+!.env.example
+tmp/
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Editor and OS artifacts
+.idea/
+.vscode/
+*.swp
