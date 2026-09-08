@@ -72,3 +72,83 @@ vite v5.4.21 building for production...
 
 1. V06 and V08 are resolved by the corrective implementation and now pass with engine/static evidence.
 2. Re-run the HTTP checklist and the end-to-end portions of dependent checks in an environment that permits a Uvicorn listener and includes a supported API-client/test dependency. This report intentionally does not claim that curl or browser interaction occurred.
+
+---
+
+## Enhancement pass — Sprint 01 browser edition
+
+- **Date:** 2026-09-08
+- **Scope:** Enhancement Stage 08 verification against `enhancements/sprint01.md`, `enhancements/scope.md`, browser-edition feature briefs 01–04, and the Sprint 01 section of `docs/architecture.md`.
+- **Overall result:** **FAIL — the pure local engine and preserved fallback build pass their available checks, but the supported static browser runtime could not be launched in this sandbox and the browser UI does not provide five distinct threat glyphs.**
+
+### Method and constraints
+
+The checklist below was derived from the approved Sprint 01 scope, its four
+behavior briefs, and the browser-edition implementation checks in the
+architecture. Source review covered the static entry point, UI-to-Worker RPC
+boundary, Worker authority, IndexedDB adapter, mission catalog, audio module,
+and the unchanged fallback application. Browser-edition pure engine tests were
+run with Node's built-in test runner. The existing React fallback was built
+with Vite, and the Python fallback package was syntax-compiled.
+
+The documented static launch command was attempted exactly as specified:
+
+```text
+python3 -m http.server 4173 --directory browser-edition
+PermissionError: [Errno 1] Operation not permitted
+```
+
+This sandbox forbids local port binding. Consequently, the served-page module
+load, module Worker handshake, actual IndexedDB transactions/reload retention,
+and browser rendering/audio interaction could not be exercised. This report
+does not represent static source review as browser execution. The virtual
+environment also has no `pytest`, so the three existing backend tests could
+not be collected by their normal runner; `python -m compileall -q backend`
+did pass.
+
+### Checklist
+
+| ID | Requirement source | Observable check and evidence | Result |
+| --- | --- | --- | --- |
+| E01 | Scope a/e; Brief 01/04; architecture runtime boundary | Static review confirms `browser-edition/index.html` loads local `styles.css` and module `app.js`; `app.js` creates `GameClient`, and neither it nor the Worker imports `backend/`, `frontend/`, or calls `/api`. `environment-notes.md` documents `python3 -m http.server 4173 --directory browser-edition` and distinguishes `./run.sh` as fallback. | PASS (static) |
+| E02 | Brief 02; architecture local engine | `node --test browser-edition/tests/engine.test.mjs` passed all 6 tests. The tests cover a safe zero opening, active-board redaction, virus targets, hacker redaction, noisy scans, AI relocation, malware spread, legal mark/clear rejection, and safe completion. | PASS (engine) |
+| E03 | Brief 02; architecture Worker RPC | Static review confirms `GameClient` sends request IDs and `game-worker.js` returns one `{id, ok, data/error}` response per accepted request. The Worker validates action payloads, maps malformed requests to `invalid_request`, missing IDs to `not_found`, locked missions to `mission_locked`, and inactive attempts to `attempt_inactive`. Worker runtime behavior could not be exercised without a served browser. | PASS (static) |
+| E04 | Brief 02; architecture public snapshot contract | Static review of `snapshot()` and `publicBoard()` finds active snapshots expose sector state, learned signals, and legitimately revealed threats only; concealed `threat`, board seed, and engine flags remain Worker-private. The E02 redaction test passed. | PASS (engine/static) |
+| E05 | Brief 03; architecture persistence | Static review finds the specified IndexedDB database/version and all five stores (`profile`, `missionProgress`, `attempts`, `activeMission`, `attemptEvents`) in `storage.js`; Worker writes settings, attempts, event history, progress, and active pointer through its storage boundary. Actual IndexedDB persistence across a browser reload was not executable because E07 could not launch the served page. | FAIL (unverified runtime) |
+| E06 | Scope d; Brief 01; architecture canonical visual mappings | `app.js` maps every canonical ID directly, but `virus` and `rogue_ai_bot` both render the identical `◉` glyph. Their CSS colors differ, yet this does not provide five distinct threat graphics/identities as required. The five threats are therefore not all visually distinct. | FAIL |
+| E07 | Brief 04; architecture static serving | The documented `http.server` launch was attempted and failed at socket bind with `PermissionError: [Errno 1] Operation not permitted`. The browser edition's Worker, IndexedDB, home screen, mission play, result screens, audio, narrow portrait rendering, and resume interaction could not be verified in this environment. | FAIL (environment limitation) |
+| E08 | Scope f; Brief 01/04; architecture fallback boundary | `git diff --name-status 94d1b12..HEAD` lists only new `browser-edition/` UI files and its Stage 07 summary; no `backend/` or `frontend/` fallback source changed in Stage 07. `cd frontend && npm run build` passed (44 modules transformed, built in 308 ms). ` .venv/bin/python -m compileall -q backend` passed. | PASS (build/static) |
+| E09 | Scope g; architecture out-of-scope boundary | Static review of `browser-edition/` found no account, cloud, export/import, multiplayer, remote-hosting, or anti-cheat implementation. The documented storage is local-origin IndexedDB only. | PASS (static) |
+
+### Evidence excerpts
+
+```text
+$ node --test browser-edition/tests/engine.test.mjs
+tests 6
+pass 6
+fail 0
+```
+
+```text
+$ cd frontend && npm run build
+✓ 44 modules transformed.
+✓ built in 308ms
+```
+
+```text
+$ python3 -m http.server 4173 --directory browser-edition
+PermissionError: [Errno 1] Operation not permitted
+```
+
+### Recorded failures and follow-up scope
+
+1. Replace one of the duplicate `◉` glyphs in `browser-edition/app.js` with a
+   distinct visual for either virus or rogue AI bot, while retaining its direct
+   canonical-ID mapping.
+2. Re-run the static-serving, Worker RPC, IndexedDB reload/persistence, and
+   browser interaction checklist in an environment that permits a local
+   listener. This would verify E05 and E07 rather than merely reviewing their
+   source.
+3. The fallback application's legacy live HTTP limitation remains recorded in
+   the v0.1 section above. Its frontend build and backend syntax still pass,
+   but its normal pytest runner is unavailable in the current environment.
