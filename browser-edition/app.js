@@ -6,7 +6,7 @@ const client = new GameClient()
 const state = { bootstrap: null, screen: "loading", attempt: null, mission: null, mode: "scan", effects: [], contamination: [], result: null, pending: false, error: "" }
 const labels = { virus: "Virus", hacker: "Hacker", software_bug: "Software Bug", rogue_ai_bot: "Rogue AI Bot", malware: "Malware" }
 const icons = {
-  virus: "◉", hacker: "⌨", software_bug: "♧", rogue_ai_bot: "◉", malware: "◇",
+  virus: "✺", hacker: "⌨", software_bug: "♧", rogue_ai_bot: "◉", malware: "◇",
 }
 const element = (tag, className, text) => { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node }
 const button = (text, className, handler, disabled = false) => { const node = element("button", className, text); node.type = "button"; node.disabled = disabled; node.addEventListener("click", handler); return node }
