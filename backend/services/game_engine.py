@@ -40,6 +40,7 @@ def _effect(board, threat, r, c, rng):
     effect={'type':'','applied':False,'message':'','skipped':False}
     if threat == 'virus':
         targets=list(neighbors(board,r,c)); effect.update(type='virus_signature', message='Viral signature isolated.', applied=bool(targets))
+        effect['targets']=[{'row':rr, 'column':cc, 'state':'contaminated'} for rr,cc in targets]
     elif threat == 'hacker':
         targets=[x for x in [(rr,cc) for rr in range(board['rows']) for cc in range(board['columns'])] if board['cells'][x[0]][x[1]]['state']=='scanned' and not board['cells'][x[0]][x[1]]['threat']]
         if targets:

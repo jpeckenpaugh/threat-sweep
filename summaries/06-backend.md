@@ -7,7 +7,7 @@
 
 ## Work Completed
 
-Implemented FastAPI, SQLite persistence, seed catalog, mission lifecycle, action engine, threat effects, scoring, progression, and API contracts.
+Implemented FastAPI, SQLite persistence, seed catalog, mission lifecycle, action engine, threat effects, scoring, progression, and API contracts. A corrective pass now returns explicit transient contamination targets for virus scan effects.
 
 ## Outputs Produced
 
@@ -18,9 +18,11 @@ Implemented FastAPI, SQLite persistence, seed catalog, mission lifecycle, action
 
 Seeded each initial threat category with three occurrences per mission configuration. The API is unauthenticated as specified and retains one local profile.
 
+Virus `virus_signature` effects now include one `{row, column, state: "contaminated"}` target for every in-bounds adjacent sector. These targets are response/event feedback only: they do not alter persisted cell state or disclose hidden threat contents.
+
 ## Open Questions & Concerns
 
-The architecture calls for contamination highlighting and a count update; effects communicate the event but the frontend owns its visual presentation. The persistence board remains authoritative. Tests require pytest to be installed separately because it is not a Stage 04 runtime dependency.
+The frontend owns the transient contamination animation and must discard target feedback after rendering. The persistence board remains authoritative. Tests require pytest to be installed separately because it is not a Stage 04 runtime dependency.
 
 ## Status
 
