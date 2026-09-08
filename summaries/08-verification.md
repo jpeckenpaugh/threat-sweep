@@ -3,11 +3,11 @@
 - **Date:** 2026-09-08
 - **Author / Executor:** Codex
 - **Instruction file:** `instructions/build/08-verification.md`
-- **Commit:** `stage 08: record verification findings`
+- **Commit:** `stage 08: reverify corrective implementation`
 
 ## Work Completed
 
-Derived a pass/fail checklist from the concept, feature briefs, and architecture. Ran the supplied environment setup, attempted the prescribed service launch, ran available engine-level evidence checks, completed a static frontend review, and built the React application. Recorded all results and limitations in the verification report.
+Re-ran the Stage 08 checklist after the corrective implementation. The two previous product failures now pass: all five canonical threat identifiers map to distinct visuals, and virus scans supply/render transient adjacent-sector contamination feedback. Re-ran environment setup, attempted the supplied server launch, performed available in-memory engine checks, statically reviewed the SPA, and completed a production frontend build.
 
 ## Outputs Produced
 
@@ -20,9 +20,8 @@ The report distinguishes engine/static evidence from HTTP evidence. The sandbox 
 
 ## Open Questions & Concerns
 
-- Verification failed: frontend threat identifiers do not match the backend API values for `software_bug` and `rogue_ai_bot`, causing those categories to fall back to the virus icon.
-- Verification failed: the virus effect does not provide or render the required adjacent-sector contamination highlight.
-- A future verification pass must run the HTTP checks where the server can bind a port. This report cannot establish end-to-end API or browser behavior.
+- The corrective product checks V06 and V08 pass.
+- V02 remains failed solely because the required live HTTP verification cannot run in this sandbox. A future environment with permitted port binding and an HTTP client/test dependency should re-run the API and browser end-to-end portions of the checklist.
 
 ## Status
 
