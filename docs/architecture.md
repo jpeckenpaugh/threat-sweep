@@ -108,6 +108,18 @@ All five threats have a distinct effect that the engine reports through an
 explicit `effects` array. The client shows its message, visual treatment, and
 warning sound; it does not recreate the rule locally.
 
+#### Canonical threat identifiers
+
+The API, persisted board state, seed configuration, mission-card
+`threatCategories`, and SPA all use these exact lower-snake-case category
+identifiers: `virus`, `hacker`, `software_bug`, `rogue_ai_bot`, and `malware`.
+They are stable wire values, not display labels. The SPA's `ThreatIcon` and
+threat-specific CSS selectors must map these identifiers directly to their
+five distinct assets/treatments; human-readable labels (for example,
+"Software Bug" and "Rogue AI Bot") are presentation-only derived values.
+An unknown identifier is an API-contract error and must not be rendered using
+another category's fallback icon.
+
 | Category | Icon identity | Effect when scanned | Effect if cleared |
 | --- | --- | --- | --- |
 | `virus` | segmented neon viral node | `virus_signature`: the sector is identified and its adjacent sectors receive a brief contamination highlight | breach / mission failure |
@@ -121,6 +133,17 @@ target exists. This preserves deterministic, understandable results on small
 boards. The engine records an event for both applied and skipped effects.
 Threat categories remain visible on a terminal board; active board snapshots
 only show categories discovered through scans.
+
+For an applied `virus_signature`, the effect object includes a `targets` array
+containing every in-bounds adjacent sector to highlight, with zero-based
+`row`/`column` coordinates and the transient visual `state` value
+`"contaminated"`. These coordinates are feedback only: they disclose no
+hidden threat category or hidden-sector contents, do not mutate a sector's
+persisted scan/mark/clear state, and are rendered by the SPA as a brief
+contamination animation before the effect is discarded. A virus effect with no
+in-bounds neighbors is returned as skipped with its reason and an empty
+`targets` array. Other effects may add their own documented target data later,
+but the frontend must not infer virus targets from the board.
 
 ## Persistence model
 
@@ -244,7 +267,16 @@ must be within the configured grid. The action response is:
 {
   "attempt": {"id":"...", "status":"active", "score":120, "board": {"rows":6,"columns":6,"cells":[[]]}},
   "action": {"type":"scan", "row":2, "column":4},
-  "effects": [{"type":"virus_signature", "applied":true, "message":"Viral signature isolated."}],
+  "effects": [{
+    "type":"virus_signature",
+    "applied":true,
+    "message":"Viral signature isolated.",
+    "targets":[
+      {"row":1,"column":3,"state":"contaminated"},
+      {"row":1,"column":4,"state":"contaminated"},
+      {"row":1,"column":5,"state":"contaminated"}
+    ]
+  }],
   "events": ["scan", "warning"],
   "result": null
 }
@@ -290,9 +322,12 @@ and roll back their visual state if the request fails.
 
 The browser audio hook maps the server event names to bundled `assets/audio`
 clips. It respects the current sound preference and may fall back silently if
-autoplay/browser policies reject playback. `ThreatIcon` maps the API category
-strings to local SVG assets. CSS gives states and effects visual feedback, but
-no animation or media decision changes a server result.
+autoplay/browser policies reject playback. `ThreatIcon` maps the exact
+canonical API category strings to local SVG assets. The mission reducer stores
+the transient `virus_signature.targets` response long enough for the grid to
+apply its `contaminated` visual state and animation, then clears that UI-only
+state without changing the server snapshot. CSS gives states and effects visual
+feedback, but no animation or media decision changes a server result.
 
 The frontend is responsible for portrait-first layout, accessible labels and
 large targets, loading/error/retry states, sound toggling, and dark
@@ -309,5 +344,7 @@ outcomes.
 - Stage 07 should use the API contracts verbatim, test each screen and all
   three action modes, make the grid usable at narrow portrait widths, and ship
   original lightweight threat and audio assets for every documented category/event.
+  It must map all five canonical threat identifiers directly and render each
+  `virus_signature.targets` sector with a transient contamination highlight.
 - Any contract change must be recorded here and coordinated across both stages;
   in particular, do not move game-rule calculation into the SPA.
