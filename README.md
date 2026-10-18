@@ -2,11 +2,11 @@
 
 > **Probe the Signal. Isolate the Threat.** — An offline-capable tactical security puzzle with Web Worker game authority, IndexedDB campaign progression, and 5 dynamic cyber threat behaviors.
 
-[![Play Now on GitHub Pages](https://img.shields.io/badge/▶_PLAY_NOW-threat--sweep-38bdf8?style=for-the-badge)](https://jpeckenpaugh.github.io/threat-sweep/)
+[![Play Now on t-sweep.livive.net](https://img.shields.io/badge/▶_PLAY_NOW-threat--sweep-38bdf8?style=for-the-badge)](https://t-sweep.livive.net/)
 
 ---
 
-## 🎮 Play in Your Browser ([Live Demo](https://jpeckenpaugh.github.io/threat-sweep/))
+## 🎮 Play in Your Browser ([Live Demo](https://t-sweep.livive.net/))
 
 - **3 Tactical Sector Tools:** Switch between `⌁ SCAN` (probe adjacent signal strength), `＋ CLEAR` (secure safe data nodes), and `⚑ MARK` (quarantine suspected threat sectors).
 - **5 Dynamic Cyber Threats:** Outsmart **Virus** (contaminates neighboring signals), **Hacker** (redacts scan readouts), **Software Bug** (corrupts telemetry), **Rogue AI Bot** (relocates when cornered), and **Malware** (spreads if left unmarked).
